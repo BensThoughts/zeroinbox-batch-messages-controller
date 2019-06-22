@@ -193,38 +193,28 @@ class BatchResults {
     }
   
     addToResults(message) {
-        let ok = checkMessage(message);
-        if (ok) {
-          let new_sender_update;
-          let messageIdsOriginating = [];
-          let originatingSender = false;
-          if ( message.threadId === message.id) {
-            // originating thread message
-            originatingSender = true;
-          }
-
-          let inboxLabelExists = message.labelIds.findIndex((labelId) => {
-            if (labelId === 'INBOX') {
-              return true;
-            } else {
-              return false;
-            }
-          });
-
-          if (inboxLabelExists != -1) {
-            new_sender_update = this.createSenderUpdate(message, originatingSender, messageIdsOriginating);
-            if (new_sender_update != undefined) {
-              this.addToSenderUpdates(new_sender_update);
-            }
-          }
+      let ok = checkMessage(message);
+      if (ok) {
+        let new_sender_update;
+        let originatingSender = false;
+        if ( message.threadId === message.id) {
+          // originating thread message
+          originatingSender = true;
         }
+
+        new_sender_update = this.createSenderUpdate(message, originatingSender);
+        if (new_sender_update != undefined) {
+          this.addToSenderUpdates(new_sender_update);
+        }
+
+      }
     }
 
     createMessageUpdate(message) {
 
     }
 
-    createSenderUpdate(message, originatingSender, messageIdsOriginating) {
+    createSenderUpdate(message, originatingSender) {
       // let senderMessage = messages[0]
       try {
         let senderUpdate;
@@ -241,7 +231,7 @@ class BatchResults {
             threadIds: [message.threadId],
             threadIdsOriginating: [message.threadId],
             messageIds: [message.id],
-            messageIdsOriginating: messageIdsOriginating,
+            messageIdsOriginating: [], // implement later, with call to threadId perhaps
             totalSizeEstimate: message.sizeEstimate,
           }
          } else {
