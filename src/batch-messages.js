@@ -29,12 +29,12 @@ mongoose.connect(mongo_uri, { useNewUrlParser: true }, (err, db) => {
       
     rabbit.connect(rabbit_config, (err, conn) => {
       logger.info('Connected to RabbitMQ!');
-
-      rabbit.setChannelPrefetch('batch.listen.1', 1);
-      rabbit.consume(rabbit_topology.channels.listen[0], rabbit_topology.queues.user_id, (userMsg) => {
+      
+      rabbit.setChannelPrefetch(rabbit_topology.channels.listen, 1);
+      rabbit.consume(rabbit_topology.channels.listen, rabbit_topology.queues.user_id, (userMsg) => {
         let message = JSON.stringify(userMsg.content);
         let userId = userMsg.content.userId;
-        logger.trace(userId + ' - userMsg.content received: ' + message);
+        logger.trace(userId + ' - userMsg.content received messageIds.length: ' + message);
         // QUESTION: new? or created new class for this? or something else?
         setupConsumer(userMsg);
       }, { noAck: false });
@@ -48,16 +48,20 @@ mongoose.connect(mongo_uri, { useNewUrlParser: true }, (err, db) => {
 
 function setupConsumer(userMsg) {
   let userId = userMsg.content.userId;
+  let userChannel = rabbit_topology.channels.user_prefix + userId;
+  let messageIdsQueue = rabbit_topology.queues.user_prefix + userId;
+  let messageIdsExchange = rabbit_topology.exchanges.topic.messageIds;
+  let key = 'user.' + userId;
   
-  rabbit.assertQueue(rabbit_topology.channels.user_prefix + userId, rabbit_topology.queues.user_prefix + userId, { autoDelete: false, durable: true }, (assertQueueErr, q) => {
+  rabbit.assertQueue(userChannel, messageIdsQueue, { autoDelete: false, durable: true }, (assertQueueErr, q) => {
     if (assertQueueErr) return logger.error(assertQueueErr);
-    rabbit.setChannelPrefetch(rabbit_topology.channels.user_prefix + userId, 1);
+    rabbit.setChannelPrefetch(userChannel, 1);
     
-    rabbit.bindQueue(rabbit_topology.channels.user_prefix + userId, rabbit_topology.queues.user_prefix + userId, rabbit_topology.exchanges.topic[0], 'user.' + userId, {}, (bindQueueErr, ok) => {
+    rabbit.bindQueue(userChannel, messageIdsQueue, messageIdsExchange, key, {}, (bindQueueErr, ok) => {
       if (bindQueueErr) return logger.error(bindQueueErr);
-      rabbit.consume(rabbit_topology.channels.user_prefix + userId, rabbit_topology.queues.user_prefix + userId, (messageIdsMsg) => {
-        let message = JSON.stringify(messageIdsMsg.content);
-        logger.trace(userId + ' - messageIdsMsg received: ' + message);
+      rabbit.consume(userChannel, messageIdsQueue, (messageIdsMsg) => {
+        let messageIdsLength = messageIdsMsg.content.messageIds.length;
+        logger.trace(userId + ' - messageIdsMsg received messageIds.length: ' + messageIdsLength);
         batchGetMessages(messageIdsMsg, userMsg);
       }, { noAck: false });
     

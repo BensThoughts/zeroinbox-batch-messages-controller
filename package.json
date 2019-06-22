@@ -1,8 +1,8 @@
 {
-  "name": "zero-inbox-batch-service",
-  "version": "1.6.1",
-  "description": "Backend for zero inbox. The batching service",
-  "main": "/src/index.js",
+  "name": "zeroinbox-batch-messages",
+  "version": "0.0.1",
+  "description": "Backend for zero inbox. The batch message getting service",
+  "main": "/src/batch-messages.js",
   "directories": {
     "src": "src"
   },
@@ -10,9 +10,9 @@
     "test": "./node_modules/mocha/bin/_mocha ./src/**/*.spec.js --exit",
     "unit": "./node_modules/mocha/bin/_mocha ./src/**/unit/*.spec.js --exit",
     "integration": "./node_modules/mocha/bin/_mocha ./src/**/integration/*.spec.js --exit",
-    "start": "nodemon /usr/src/app/src/batch.js",
-    "start:dev": "cd ./src && nodemon --inspect-brk=0.0.0.0 batch.js",
-    "dev": "cd ./src && node batch.js"
+    "start": "nodemon /usr/src/app/src/batch-messages.js",
+    "start:dev": "cd ./src && nodemon --inspect-brk=0.0.0.0 batch-messages.js",
+    "dev": "cd ./src && node batch-messages.js"
   },
   "author": "",
   "license": "ISC",

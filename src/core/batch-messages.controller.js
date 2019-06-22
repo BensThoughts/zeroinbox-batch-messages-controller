@@ -37,9 +37,6 @@ function checkPartBatchResponse(part_batch_response) {
     if (part_batch_response.body === undefined) {
       throw new Error('part_batch_response.body undefined!');
     };
-    if (part_batch_response.body.messages === undefined) {
-      throw new Error('part_batch_response.body.messages undefined!');
-    }
     return true;
   } catch(err) {
     logger.error('Error in part_batch_response: ' + err);
@@ -49,12 +46,19 @@ function checkPartBatchResponse(part_batch_response) {
 
 async function batchGetMessages(messageIdsMsg, userMsg) {
 
-  let userId = threadsMsg.content.userId;
-  let access_token = threadsMsg.content.access_token;
+  let userId = messageIdsMsg.content.userId;
+  let access_token = messageIdsMsg.content.access_token;
   let messageIds = messageIdsMsg.content.messageIds;
 
-  if (messageIds.length <= 0) {
-    ackMessages(userId, messageIdsMsg, userMsg);
+  if (messageIds.length <= 0) { // pre-empt batching when there are no new messageIds (messageIds = []);
+    let lastMsg = messageIdsMsg.content.lastMsg;
+    if (!lastMsg) {
+      ackMessages(messageIdsMsg, userMsg);
+    } else {
+      updateFirstRunStatus(userId);
+      updateLoadingStatus(userId);
+      ackMessages(messageIdsMsg, userMsg);
+    }
     return;
   } else {
     const startBatchProccess = async () => {
@@ -81,7 +85,7 @@ async function batchGetMessages(messageIdsMsg, userMsg) {
           batchResult.parts.forEach((part_batch_response) => {
             let ok = checkPartBatchResponse(part_batch_response);
             if (ok) { 
-                batchResults.addToResults(part_batch_response.body.messages);
+                batchResults.addToResults(part_batch_response.body);
             }
           });
 
@@ -91,18 +95,21 @@ async function batchGetMessages(messageIdsMsg, userMsg) {
       });
 
       let senders = batchResults.getResults();
-      if (!threadsMsg.content.lastMsg) {
+      let lastMsg = messageIdsMsg.content.lastMsg;
+      if (!lastMsg) {
         uploadBatchResults(userId, senders);
-        ackMessages(userId, threadsMsg, userMsg);
+        ackMessages(messageIdsMsg, userMsg);
       } else {
         await uploadBatchResultsSync(userId, senders);
         logger.debug('UPLOADED');
         // change loading status and ack(threadsMsg) only after the upserts are done
         // rabbit.ack(threadsMsg);
         // setLoadingToFalse(userId);
-        ackMessages(userId, threadsMsg, userMsg);
+        updateFirstRunStatus(userId);
+        updateLoadingStatus(userId);
+        ackMessages(messageIdsMsg, userMsg);
       }
-      logger.debug('BATCH FINISHED!')
+      logger.trace(userId + ' - BATCH FINISHED!')
     }
 
     startBatchProccess().catch((error) => {
@@ -114,28 +121,26 @@ async function batchGetMessages(messageIdsMsg, userMsg) {
 function ackMessages(messageIdsMsg, userMsg) {
   let userId = userMsg.content.userId;
   let lastMsg = messageIdsMsg.content.lastMsg;
+  let userChannel = rabbit_topology.channels.user_prefix + userId;
+
   if (!lastMsg) {
-    rabbit.ack(rabbit_topology.channels.user_prefix + userId, messageIdsMsg);
+    rabbit.ack(userChannel, messageIdsMsg);
   } else {
     // change loading status and ack(threadsMsg) only after the upserts are done
     // rabbit.ack(threadsMsg);
     // setLoadingToFalse(userId);
-    updateFirstRunStatus(userId);
-    updateLoadingStatus(userId);
-
-    rabbit.ack(rabbit_topology.channels.user_prefix + userId, messageIdsMsg);
+    rabbit.ack(userChannel, messageIdsMsg);
+    let messageIdsQueue = rabbit_topology.queues.user_prefix + userId;
+    rabbit.deleteQueue(userChannel, messageIdsQueue, {}, (err, ok) => {
+      rabbit.cancelChannel(userChannel);
+      rabbit.closeChannel(userChannel);
+    });
 
     // The only point of userMsg in this whole function is so that if the process
     // dies another batch service can grab the userMsg from 'batch.user.id.q.1' and
     // continue working on the users threads.q until all of the batches are complete.
     // so on the lastMsg we ack the userMsg.
-    rabbit.ack(rabbit_topology.channels.listen[0], userMsg);
-
-    rabbit.deleteQueue(rabbit_topology.channels.user_prefix + userId, rabbit_topology.queues.user_prefix + userId, {}, (err, ok) => {
-      rabbit.cancelChannel(rabbit_topology.channels.user_prefix + userId);
-      rabbit.closeChannel(rabbit_topology.channels.user_prefix + userId);
-    });
-
+    rabbit.ack(rabbit_topology.channels.listen, userMsg);
   }
 }
 

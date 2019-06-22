@@ -43,16 +43,17 @@ if (RABBIT_HOSTNAME) {
 
 const rabbit_topology = {
   channels: {
-    listen: ['batch-messages.listen.channel.1'],
+    listen: 'batch-messages.listen.channel.1',
     user_prefix: 'batch-messages.listen.user.channel.'
   },
   exchanges: {
-    fanout: ['api.get-senders.user-ids.fanout.ex.1'],
-    topic: ['message-ids.get-senders.message-ids.topic.ex.1']
+    topic: {
+      messageIds: 'message-ids.get-messages.message-ids.topic.ex.1'
+    }
   },
   queues: {
-    user_id: 'message-ids.get-senders.user-ids.q.1',
-    user_prefix: 'message-ids.get-senders.q.'
+    user_id: 'batch-messages.get-messages.user-ids.q.1',
+    user_prefix: 'batch-messages.get-messages.q.'
   }
 }
 

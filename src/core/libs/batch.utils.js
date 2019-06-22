@@ -75,7 +75,7 @@ function createBatchRequest(messageIdsChunk, access_token) {
   
     let query = '?format=metadata ';
   
-    messageIdsChunk.forEach((threadId) => {
+    messageIdsChunk.forEach((messageId) => {
       batch.add({
         'method': 'GET',
         'path': '/gmail/v1/users/me/messages/' + messageId + query,

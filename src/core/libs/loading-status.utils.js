@@ -15,8 +15,8 @@ function updateFirstRunStatus(userId) {
     "passive.firstRun": false
   }
   upsertToHistory(userId, update, (err, raw) => {
-    if(err) return logger.error('Error in History.updateOne: attempt to change firstRun to false ' + err);
-    logger.debug('History: Passive: firstRun: false: ' + userId);
+    if(err) return logger.error(userId + ' - Error in History.updateOne: attempt to change firstRun to false ' + err);
+    logger.trace(userId + ' - History: Passive: firstRun: false');
   })
 }
 
@@ -26,23 +26,23 @@ function updateLoadingStatus(userId) {
       "loadingStatus": false,
     }
     upsertLoadingStatus(userId, update, (err, raw) => {
-      if (err) return logger.error('Error in LoadingStatus.updateOne: attempt to change loadingStatus to false ' + err)
-      logger.debug('LoadingStatus: loadingStatus set to false');
+      if (err) return logger.error(userId + ' - Error in LoadingStatus.updateOne: attempt to change loadingStatus to false ' + err)
+      logger.trace(userId + ' - LoadingStatus: loadingStatus set to false');
     });
   }
   
-function updatePercentLoaded(threadsMsg, batchPage) {
-    let userId = threadsMsg.content.userId;
+function updatePercentLoaded(messageIdsMsg, batchPage) {
+    let userId = messageIdsMsg.content.userId;
     let update;
     let percentTotalLoaded = DEFAULT_PERCENT_LOADED;
     findOneLoadingStatus(userId, (err, doc) => {
       if (doc !== null) {
-        if (doc.threadIdCount && doc.resultsPerPage) {
-          let threadIdPage = threadsMsg.content.pageNumber;
-          let threadIdCount = doc.threadIdCount;
-          let totalNumberOfBatches = Math.ceil(threadIdCount/BATCH_SIZE);
+        if (doc.messageIdTotal && doc.resultsPerPage) {
+          let messageIdPage = messageIdsMsg.content.pageNumber;
+          let messageIdTotal = doc.messageIdTotal;
+          let totalNumberOfBatches = Math.ceil(messageIdTotal/BATCH_SIZE);
           let batchesPerPage = doc.resultsPerPage/BATCH_SIZE;
-          let totalBatchNumber = (threadIdPage * batchesPerPage) + batchPage;
+          let totalBatchNumber = (messageIdPage * batchesPerPage) + batchPage;
           let DECIMAL = 100;
     
           percentTotalLoaded = (totalBatchNumber/totalNumberOfBatches) * DECIMAL;
@@ -50,16 +50,13 @@ function updatePercentLoaded(threadsMsg, batchPage) {
         }
       }
       update = {
-        "userId": threadsMsg.content.userId,
+        "userId": userId,
         "percentLoaded": percentTotalLoaded
       }
 
       upsertLoadingStatus(userId, update, (err, raw) => {
-        if (err) {
-          logger.error('Error in updatePercentLoaded() at History.updateOne: ' + err)
-        } else {
-          logger.debug('History: Active: percentLoaded: ' + percentTotalLoaded);
-        }
+        if (err) return logger.error(userId + ' - Error in updatePercentLoaded() at History.updateOne: ' + err);
+        logger.trace(userId + ' - History: Active: percentLoaded: ' + percentTotalLoaded);
       });
     });
   }

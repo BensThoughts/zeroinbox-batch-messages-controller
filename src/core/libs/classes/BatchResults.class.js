@@ -192,19 +192,15 @@ class BatchResults {
       this.userId = userId;
     }
   
-    addToResults(messages) {
-      messages.forEach((message, index, messages) => {
+    addToResults(message) {
         let ok = checkMessage(message);
         if (ok) {
           let new_sender_update;
           let messageIdsOriginating = [];
           let originatingSender = false;
-
-          if (index === 0) {
+          if ( message.threadId === message.id) {
+            // originating thread message
             originatingSender = true;
-            messageIdsOriginating = messages.map(message => message.id);
-          } else {
-            originatingSender = false;
           }
 
           let inboxLabelExists = message.labelIds.findIndex((labelId) => {
@@ -222,8 +218,6 @@ class BatchResults {
             }
           }
         }
-    
-      });
     }
 
     createMessageUpdate(message) {

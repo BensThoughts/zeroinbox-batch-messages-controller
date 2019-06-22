@@ -7,9 +7,9 @@
         {
             "type": "node",
             "request": "attach",
-            "name": "Batch",
+            "name": "Batch-Messages",
             "address": "127.0.0.1",
-            "port":9232
+            "port":9235
         }
     ]
 }
