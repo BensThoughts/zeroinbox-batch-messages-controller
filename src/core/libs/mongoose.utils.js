@@ -76,7 +76,6 @@ exports.upsertSenders = function(userId, senders, callback) {
         }
     });
     Sender.bulkWrite(bulkWrites, (err, res) => {
-        console.log('Sender writes: ' + res);
         callback(err, res);
     });
 }
