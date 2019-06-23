@@ -155,12 +155,6 @@ function createSenderId(senderAddress) {
 
 function checkMessage(userId, message) {
   try {
-    if (message === undefined) {
-      throw new Error('message undefined!');
-    }
-    if (message.id === undefined) {
-      throw new Error('message.id undefined!');
-    }
     if (message.threadId === undefined) {
       throw new Error('message.threadId undefined!');
     }
@@ -182,7 +176,7 @@ function checkMessage(userId, message) {
     // logger.debug(chalk.green('part_batch_response OK!');
     return true;
   } catch(err) {
-    logger.error(userId + ' - Error in message from part_batch_response: ' + err);
+    logger.error(userId + ' - Error in message: ' + message.id + ': ' + err);
     return false;
   }
 }

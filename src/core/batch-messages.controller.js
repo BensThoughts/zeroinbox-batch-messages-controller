@@ -32,14 +32,20 @@ const {
   BATCH_SIZE
 } = require('../config/init.config');
 
-function checkPartBatchResponse(part_batch_response) {
+function checkPartBatchResponse(userId, part_batch_response) {
   try {
+    if (part_batch_response === undefined) {
+      throw new Error('part_batch_response undefined!');
+    }
     if (part_batch_response.body === undefined) {
-      throw new Error('part_batch_response.body undefined!');
+      throw new Error('part_batch_response.body undefined! (message undefined!)');
     };
+    if (part_batch_response.body.id === undefined) {
+      throw new Error('part_batch_response.body.id undefined! (message.id undefined!)');
+    }
     return true;
   } catch(err) {
-    logger.error('Error in part_batch_response: ' + err);
+    logger.error(userId + ' - Error in part_batch_response: ' + err);
     return false;
   }
 }
@@ -83,9 +89,10 @@ async function batchGetMessages(messageIdsMsg, userMsg) {
         if (batchResult.parts !== undefined) {
 
           batchResult.parts.forEach((part_batch_response) => {
-            let ok = checkPartBatchResponse(part_batch_response);
-            if (ok) { 
-                batchResults.addToResults(part_batch_response.body);
+            let ok = checkPartBatchResponse(userId, part_batch_response);
+            if (ok) {
+              let message = part_batch_response.body;
+              batchResults.addToResults(message);
             }
           });
 
