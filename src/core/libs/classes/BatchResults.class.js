@@ -10,14 +10,10 @@ function extractMetaData(message) {
   
   if (headers !== undefined) {
     messageMetaData = {
-      // id: headers.id,
       fromAddress: headers.fromAddress,
       fromName: headers.fromName,
       unsubscribeWeb: headers.unsubscribeWeb,
       unsubscribeEmail: headers.unsubscribeEmail,
-      // threadId: message.threadId,
-      // labelIds: message.labelIds,
-      // sizeEstimate: message.sizeEstimate,
     }
   }
 
@@ -161,9 +157,9 @@ function checkMessage(userId, message) {
     if (message.internalDate === undefined) {
       throw new Error('message.internalDate undefined!');
     }
-    if (message.labelIds === undefined) {
-      throw new Error('message.labelIds undefined!');
-    }
+    // if (message.labelIds === undefined) {
+    //  throw new Error('message.labelIds undefined!');
+    // }
     if (message.sizeEstimate === undefined) {
       throw new Error('message.sizeEstimate undefined!');
     }
