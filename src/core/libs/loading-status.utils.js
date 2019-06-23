@@ -56,7 +56,7 @@ function updatePercentLoaded(messageIdsMsg, batchPage) {
 
       upsertLoadingStatus(userId, update, (err, raw) => {
         if (err) return logger.error(userId + ' - Error in updatePercentLoaded() at History.updateOne: ' + err);
-        logger.trace(userId + ' - History: Active: percentLoaded: ' + percentTotalLoaded);
+        logger.trace(userId + ' - History.active.percentLoaded: ' + percentTotalLoaded);
       });
     });
   }

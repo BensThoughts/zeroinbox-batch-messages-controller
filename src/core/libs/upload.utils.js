@@ -7,7 +7,7 @@ const {
   function uploadBatchResults(userId, senders) {
     upsertSenders(userId, senders, (err, raw) => {
       if (err) return logger.error(userId + ' - Error in uploadBatchResults() at upsertSenders(): ' + err);
-      logger.trace(userId + 'Senders updated in mongo async!');
+      logger.trace(userId + ' - Senders updated in mongo async!');
     });
   }
   
