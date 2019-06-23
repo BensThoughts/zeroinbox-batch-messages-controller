@@ -6,9 +6,9 @@ const rabbit = require('zero-rabbit');
 const batchGetMessages = require('./core/batch-messages.controller');
 
 const { 
-  mongo_uri,
-  batch_messages_health_host,
-  batch_messages_health_port
+  MONGO_URI,
+  BATCH_MESSAGES_HEALTH_HOST,
+  BATCH_MESSAGES_HEALTH_PORT
 } = require('./config/init.config');
 const { 
   rabbit_config, 
@@ -21,7 +21,7 @@ KubeHealthCheck.get('/healthz', (req, res, next) => {
   res.status(200).send();
 });
 
-mongoose.connect(mongo_uri, { useNewUrlParser: true }, (err, db) => {
+mongoose.connect(MONGO_URI, { useNewUrlParser: true }, (err, db) => {
   if (err) {
     logger.error('Error at mongoose.connect(): ' + err);
   } else {
@@ -39,9 +39,9 @@ mongoose.connect(mongo_uri, { useNewUrlParser: true }, (err, db) => {
         setupConsumer(userMsg);
       }, { noAck: false });
 
-      let server = KubeHealthCheck.listen(batch_messages_health_port, batch_messages_health_host);
+      let server = KubeHealthCheck.listen(BATCH_MESSAGES_HEALTH_PORT, BATCH_MESSAGES_HEALTH_HOST);
       processHandler(server);
-      logger.info(`Running health check on http://${batch_messages_health_host}:${batch_messages_health_port}`);
+      logger.info(`Running health check on http://${BATCH_MESSAGES_HEALTH_HOST}:${BATCH_MESSAGES_HEALTH_PORT}`);
     });
   }
 });
