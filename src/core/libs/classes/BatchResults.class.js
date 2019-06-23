@@ -153,10 +153,13 @@ function createSenderId(senderAddress) {
   return id;
 }
 
-function checkMessage(message) {
+function checkMessage(userId, message) {
   try {
     if (message === undefined) {
       throw new Error('message undefined!');
+    }
+    if (message.id === undefined) {
+      throw new Error('message.id undefined!');
     }
     if (message.threadId === undefined) {
       throw new Error('message.threadId undefined!');
@@ -179,7 +182,7 @@ function checkMessage(message) {
     // logger.debug(chalk.green('part_batch_response OK!');
     return true;
   } catch(err) {
-    logger.error('Error in part_batch_response: ' + err);
+    logger.error(userId + ' - Error in message from part_batch_response: ' + err);
     return false;
   }
 }
@@ -193,7 +196,7 @@ class BatchResults {
     }
   
     addToResults(message) {
-      let ok = checkMessage(message);
+      let ok = checkMessage(this.userId, message);
       if (ok) {
         let new_sender_update;
         let originatingSender = false;
