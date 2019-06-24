@@ -169,7 +169,6 @@ function checkMessage(userId, message) {
     if (message.payload.headers === undefined) {
       throw new Error('message.payload.headers undefined!');
     }
-    // logger.debug(chalk.green('part_batch_response OK!');
     return true;
   } catch(err) {
     logger.error(userId + ' - Error in message: ' + message.id + ': ' + err);

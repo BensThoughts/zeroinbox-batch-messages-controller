@@ -108,7 +108,6 @@ async function batchGetMessages(messageIdsMsg, userMsg) {
         ackMessages(messageIdsMsg, userMsg);
       } else {
         await uploadBatchResultsSync(userId, senders);
-        logger.debug('UPLOADED');
         // change loading status and ack(threadsMsg) only after the upserts are done
         // rabbit.ack(threadsMsg);
         // setLoadingToFalse(userId);

@@ -15,7 +15,7 @@ const {
       await upsertSendersPromise(userId, senders).catch((err) => {
         logger.error(userId + ' - Error in uploadBatchResultsSync() at upsertSenders(): ' + err);
       });
-      logger.debug(userId + ' - Senders updated in mongo synchronously!');
+      logger.trace(userId + ' - Senders updated in mongo synchronously!');
   }
   
   function upsertSendersPromise(userId, senders) {
