@@ -2,6 +2,10 @@ const mongoose = require('mongoose');
 const logger = require('./loggers/log4js');
 
 const rabbit = require('zero-rabbit');
+const { 
+  rabbit_config, 
+  rabbit_topology,
+} = require('./config/rabbit.config');
 
 const batchGetMessages = require('./core/batch-messages.controller');
 
@@ -10,10 +14,12 @@ const {
   BATCH_MESSAGES_HEALTH_HOST,
   BATCH_MESSAGES_HEALTH_PORT
 } = require('./config/init.config');
-const { 
-  rabbit_config, 
-  rabbit_topology,
-} = require('./config/rabbit.config');
+
+// Print out the value of all env vars
+let envVars = require('./config/init.config');
+Object.keys(envVars).forEach((envVar) => {
+  logger.info(envVar + ': ' + envVars[envVar]);
+});
 
 const express = require('express');
 const KubeHealthCheck = express();
