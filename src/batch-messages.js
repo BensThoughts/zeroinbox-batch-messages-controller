@@ -27,7 +27,7 @@ KubeHealthCheck.get('/healthz', (req, res, next) => {
   res.status(200).send();
 });
 
-mongoose.connect(MONGO_URI, { useNewUrlParser: true }, (err, db) => {
+mongoose.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true }, (err, db) => {
   if (err) {
     logger.error('Error at mongoose.connect(): ' + err);
   } else {
