@@ -17,7 +17,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "amqplib": "^0.5.6",
     "batchelor": "^2.0.2",
     "dotenv": "^6.2.0",
     "express": "^4.17.1",
