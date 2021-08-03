@@ -2,9 +2,9 @@
 const logger = require('../loggers/log4js');
 const rabbit = require('zero-rabbit');
 
-/*******************************************************************************
- BATCHELOR INIT
-*******************************************************************************/
+/**
+ * BATCHELOR INIT
+******************/
 const BatchResults = require('./libs/classes/BatchResults.class');
 
 const {
@@ -25,98 +25,117 @@ const {
 } = require('./libs/loading-status.utils');
 
 const {
-  rabbit_topology
+  userTopology,
 } = require('../config/rabbit.config');
 
 const {
-  BATCH_SIZE
+  BATCH_SIZE,
 } = require('../config/init.config');
 
-function checkPartBatchResponse(userId, part_batch_response) {
+/**
+ * Checks if the response is valid (some emails have invalid properties)
+ * @param  {string} userId
+ * @param  {Object} partBatchResponse {
+ *  body: The message payload
+ *  id: The message id payload
+ * }
+ * @return {boolean}
+ */
+function checkPartBatchResponse(userId, partBatchResponse) {
   try {
-    if (part_batch_response === undefined) {
-      throw new Error('part_batch_response undefined!');
+    if (partBatchResponse === undefined) {
+      throw new Error('partBatchResponse undefined!');
     }
-    if (part_batch_response.body === undefined) {
-      throw new Error('part_batch_response.body undefined! (message undefined!): ' + JSON.stringify(part_batch_response));
+    if (partBatchResponse.body === undefined) {
+      throw new Error(
+          '(message undefined!): ' + JSON.stringify(partBatchResponse),
+      );
     };
-    if (part_batch_response.body.id === undefined) {
-      throw new Error('part_batch_response.body.id undefined! (message.id undefined!): ' + JSON.stringify(part_batch_response.body));
+    if (partBatchResponse.body.id === undefined) {
+      throw new Error(
+          '(message.id undefined!): ' + JSON.stringify(partBatchResponse.body),
+      );
     }
     return true;
-  } catch(err) {
-    logger.error('userId: ' + userId + ' - Error in part_batch_response: ' + err);
+  } catch (err) {
+    logger.error(userId + ' - Error in partBatchResponse: ' + err);
     return false;
   }
 }
 
+/**
+ * @param  {RabbitMsg} messageIdsMsg Holds the messageIds to run job on
+ * @param  {RabbitMsg} userMsg Holds the message asking to run the job
+ */
 async function batchGetMessages(messageIdsMsg, userMsg) {
+  const userId = messageIdsMsg.content.userId;
+  const accessToken = messageIdsMsg.content.accessToken;
+  const messageIds = messageIdsMsg.content.messageIds;
 
-  let userId = messageIdsMsg.content.userId;
-  let access_token = messageIdsMsg.content.access_token;
-  let messageIds = messageIdsMsg.content.messageIds;
-
-  if (messageIds.length <= 0) { // pre-empt batching when there are no new messageIds (messageIds = []);
-    let lastMsg = messageIdsMsg.content.lastMsg;
+  // pre-empt batching when there are no new messageIds (messageIds = []);
+  if (messageIds.length <= 0) {
+    const lastMsg = messageIdsMsg.content.lastMsg;
     if (!lastMsg) {
       ackMessages(messageIdsMsg, userMsg);
     } else {
-      updateFirstRunStatus(userId);
-      updateLoadingStatus(userId);
+      updateFirstRunStatus(userId, false);
+      updateLoadingStatus(userId, false);
       ackMessages(messageIdsMsg, userMsg);
     }
     return;
   } else {
     const startBatchProccess = async () => {
-
-      let batchResults = new BatchResults(userId);
-      let messageIdChunks = chunkIds(messageIds, [], BATCH_SIZE);
+      const batchResults = new BatchResults(userId);
+      const messageIdChunks = chunkIds(messageIds, [], BATCH_SIZE);
       let batchPage = 1;
       let date;
 
-      await asyncForEach(messageIdChunks, async (messageIdChunk) => {            
-        let batchResult = await createBatchRequest(messageIdChunk, access_token).catch((err) => {
-          logger.error('userId: ' + userId + ' - ' + 'GMAIL BATCH REQUEST ERROR: ' + err);
-        });
+      await asyncForEach(messageIdChunks, async (messageIdChunk) => {
+        const batchResult =
+          await createBatchRequest(messageIdChunk, accessToken)
+              .catch((err) => {
+                logger.error(userId + ' - GMAIL BATCH REQUEST ERROR: ' + err);
+              });
 
         // profiling purposes
         date = new Date();
-        logger.trace('userId: ' + userId + ' - Batch response ' + batchPage + ' done: ' + date.getSeconds() + '.' + date.getMilliseconds() + 's');
+        logger.trace(
+            userId +
+            ' - Batch ' + batchPage + ' done: ' + date.getSeconds() + 's',
+        );
 
         updatePercentLoaded(messageIdsMsg, batchPage);
         batchPage++;
-       
-        if (batchResult.parts !== undefined) {
 
-          batchResult.parts.forEach((part_batch_response) => {
-            let ok = checkPartBatchResponse(userId, part_batch_response);
+        if (batchResult.parts !== undefined) {
+          batchResult.parts.forEach((partBatchResponse) => {
+            const ok = checkPartBatchResponse(userId, partBatchResponse);
             if (ok) {
-              let message = part_batch_response.body;
+              const message = partBatchResponse.body;
               batchResults.addToResults(message);
             }
           });
-
         } else {
-          logger.error('userId: ' + userId + ' - result.parts was undefined!');
+          logger.error(userId + ' - result.parts was undefined!');
         }
       });
 
-      let senders = batchResults.getResults();
-      let lastMsg = messageIdsMsg.content.lastMsg;
+      const senders = batchResults.getResults();
+      const lastMsg = messageIdsMsg.content.lastMsg;
       if (!lastMsg) {
         uploadBatchResults(userId, senders);
         ackMessages(messageIdsMsg, userMsg);
       } else {
         await uploadBatchResultsSync(userId, senders);
-        // change loading status and ack(threadsMsg) only after the upserts are done
+        // change loading status & ack(threadsMsg) after the upserts are done
         // rabbit.ack(threadsMsg);
         // setLoadingToFalse(userId);
-        updateFirstRunStatus(userId);
-        updateLoadingStatus(userId);
+        updateFirstRunStatus(userId, false);
+        updateLoadingStatus(userId, false);
         ackMessages(messageIdsMsg, userMsg);
       }
-      logger.trace('userId: ' + userId + ' - BATCH FINISHED!')
-    }
+      logger.trace(userId + ' - BATCH FINISHED!');
+    };
 
     startBatchProccess().catch((error) => {
       logger.error(error);
@@ -124,10 +143,14 @@ async function batchGetMessages(messageIdsMsg, userMsg) {
   }
 }
 
+/**
+ * @param  {RabbitMsg} messageIdsMsg
+ * @param  {RabbitMsg} userMsg
+ */
 function ackMessages(messageIdsMsg, userMsg) {
-  let userId = userMsg.content.userId;
-  let lastMsg = messageIdsMsg.content.lastMsg;
-  let userChannel = rabbit_topology.channels.user_prefix + userId;
+  const userId = userMsg.content.userId;
+  const lastMsg = messageIdsMsg.content.lastMsg;
+  const userChannel = userTopology.channels.user_prefix + userId;
 
   if (!lastMsg) {
     rabbit.ack(userChannel, messageIdsMsg);
@@ -136,21 +159,20 @@ function ackMessages(messageIdsMsg, userMsg) {
     // rabbit.ack(threadsMsg);
     // setLoadingToFalse(userId);
     rabbit.ack(userChannel, messageIdsMsg);
-    let messageIdsQueue = rabbit_topology.queues.user_prefix + userId;
+    const messageIdsQueue = userTopology.queues.user_prefix + userId;
     rabbit.deleteQueue(userChannel, messageIdsQueue, {}, (err, ok) => {
       rabbit.cancelChannel(userChannel);
       rabbit.closeChannel(userChannel);
     });
 
-    // The only point of userMsg in this whole function is so that if the process
-    // dies another batch service can grab the userMsg from 'batch.user.id.q.1' and
-    // continue working on the users threads.q until all of the batches are complete.
-    // so on the lastMsg we ack the userMsg.
-    rabbit.ack(rabbit_topology.channels.listen, userMsg);
+    // The only point of userMsg in this whole function is so that if the
+    // process dies another batch service can grab the userMsg from
+    // batch.user.id.q.1' and continue working on the users messages.q until
+    // all of the batches are complete. So on the lastMsg we ack the userMsg.
+    rabbit.ack(userTopology.channels.listen, userMsg);
   }
 }
 
 module.exports = batchGetMessages;
-
 
 

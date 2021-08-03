@@ -6,7 +6,7 @@ const Schema = mongoose.Schema;
 
 const sessionSchema = new Schema({
   sessionID: { type: String, required: false },
-  access_token: { type: String, required: true },
+  accessToken: { type: String, required: true },
   expiry_date: { type: String, required: true },
   token_type: { type: String, required: true },
   scope: { type: String, required: true },
