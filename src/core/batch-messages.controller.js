@@ -38,16 +38,14 @@ function checkPartBatchResponse(userId, part_batch_response) {
       throw new Error('part_batch_response undefined!');
     }
     if (part_batch_response.body === undefined) {
-      logger.info(JSON.stringify(part_batch_response));
-      throw new Error('part_batch_response.body undefined! (message undefined!)');
+      throw new Error('part_batch_response.body undefined! (message undefined!): ' + JSON.stringify(part_batch_response));
     };
     if (part_batch_response.body.id === undefined) {
-      logger.info(JSON.stringify(part_batch_response.body));
-      throw new Error('part_batch_response.body.id undefined! (message.id undefined!)');
+      throw new Error('part_batch_response.body.id undefined! (message.id undefined!): ' + JSON.stringify(part_batch_response.body));
     }
     return true;
   } catch(err) {
-    logger.error(userId + ' - Error in part_batch_response: ' + err);
+    logger.error('userId: ' + userId + ' - Error in part_batch_response: ' + err);
     return false;
   }
 }
@@ -78,12 +76,12 @@ async function batchGetMessages(messageIdsMsg, userMsg) {
 
       await asyncForEach(messageIdChunks, async (messageIdChunk) => {            
         let batchResult = await createBatchRequest(messageIdChunk, access_token).catch((err) => {
-          logger.error('GMAIL BATCH REQUEST ERROR: ' + err);
+          logger.error('userId: ' + userId + ' - ' + 'GMAIL BATCH REQUEST ERROR: ' + err);
         });
 
         // profiling purposes
         date = new Date();
-        logger.trace(userId + ' - Batch response ' + batchPage + ' done: ' + date.getSeconds() + '.' + date.getMilliseconds() + 's');
+        logger.trace('userId: ' + userId + ' - Batch response ' + batchPage + ' done: ' + date.getSeconds() + '.' + date.getMilliseconds() + 's');
 
         updatePercentLoaded(messageIdsMsg, batchPage);
         batchPage++;
@@ -99,7 +97,7 @@ async function batchGetMessages(messageIdsMsg, userMsg) {
           });
 
         } else {
-          logger.error('result.parts was undefined!');
+          logger.error('userId: ' + userId + ' - result.parts was undefined!');
         }
       });
 
@@ -117,7 +115,7 @@ async function batchGetMessages(messageIdsMsg, userMsg) {
         updateLoadingStatus(userId);
         ackMessages(messageIdsMsg, userMsg);
       }
-      logger.trace(userId + ' - BATCH FINISHED!')
+      logger.trace('userId: ' + userId + ' - BATCH FINISHED!')
     }
 
     startBatchProccess().catch((error) => {
