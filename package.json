@@ -1,6 +1,6 @@
 {
   "name": "zeroinbox-batch-messages",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "Backend for zero inbox. The batch message getting service",
   "main": "/src/batch-messages.js",
   "directories": {
