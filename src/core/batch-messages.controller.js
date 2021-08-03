@@ -38,9 +38,11 @@ function checkPartBatchResponse(userId, part_batch_response) {
       throw new Error('part_batch_response undefined!');
     }
     if (part_batch_response.body === undefined) {
+      logger.info(JSON.stringify(part_batch_response));
       throw new Error('part_batch_response.body undefined! (message undefined!)');
     };
     if (part_batch_response.body.id === undefined) {
+      logger.info(JSON.stringify(part_batch_response.body));
       throw new Error('part_batch_response.body.id undefined! (message.id undefined!)');
     }
     return true;
