@@ -1,6 +1,16 @@
 
+/**
+ *  Temporary holding place for received gmail data about
+ *  a sender in the Inbox. As the Inbox is scanned
+ *  a particular sender (email address) that appears
+ *  more than once is merged/concated into one data structure.
+ *  before eventually getting upserted to MongoDB
+ */
 class SenderUpdate {
-
+  /**
+   * @param  {UpdateObject} update Mostly meta-data about a message
+   * @param  {string} userId
+   */
   constructor(update, userId) {
     this.userId = userId;
     this.senderId = update.senderId;
@@ -16,48 +26,70 @@ class SenderUpdate {
     this.totalSizeEstimate = update.totalSizeEstimate;
   }
 
+  /**
+   * @param  {Array<string>} messageIds
+   */
   concatMessageIds(messageIds) {
     this.messageIds = this.messageIds.concat(messageIds);
   }
 
+  /**
+   * @param  {Array<string>} messageIdsOriginating
+   */
   concatMessageIdsOriginating(messageIdsOriginating) {
-    this.messageIdsOriginating = this.messageIdsOriginating.concat(messageIdsOriginating);
+    this.messageIdsOriginating =
+      this.messageIdsOriginating.concat(messageIdsOriginating);
   }
 
+  /**
+   * @param  {string} name Name given by email sender
+   */
   concatNames(name) {
     this.senderNames = this.senderNames.concat(name);
   }
 
+  /**
+   * @param  {Array<string>} threadIds
+   */
   concatThreadIds(threadIds) {
     this.threadIds = this.threadIds.concat(threadIds);
   }
 
+  /**
+   * @param  {Array<string>} threadIdsOriginating
+   */
   concatThreadIdsOriginating(threadIdsOriginating) {
-    this.threadIdsOriginating = this.threadIdsOriginating.concat(threadIdsOriginating);
+    this.threadIdsOriginating =
+      this.threadIdsOriginating.concat(threadIdsOriginating);
   }
 
+  /**
+   * @param  {number} totalSizeEstimate Size in bytes
+   */
   addToTotalSizeEstimate(totalSizeEstimate) {
     this.totalSizeEstimate = this.totalSizeEstimate + totalSizeEstimate;
   }
 
-  // new_sender_update.senderNames.length always = 1
-  mergeSenderUpdate(new_sender_update) {
-    let found_same_name = false;
+  /**
+   * newSenderUpdate.senderNames.length always = 1
+   * @param  {SenderUpdate} newSenderUpdate
+   */
+  mergeSenderUpdate(newSenderUpdate) {
+    let foundSameName = false;
     this.senderNames.forEach((name) => {
-      if (name === new_sender_update.senderNames[0]) {
-        found_same_name = true;
+      if (name === newSenderUpdate.senderNames[0]) {
+        foundSameName = true;
       }
     });
-    if (!found_same_name) {
-      this.concatNames(new_sender_update.senderNames[0]);
+    if (!foundSameName) {
+      this.concatNames(newSenderUpdate.senderNames[0]);
     }
-    this.concatThreadIds(new_sender_update.threadIds);
-    this.concatThreadIdsOriginating(new_sender_update.threadIdsOriginating);
-    this.concatMessageIds(new_sender_update.messageIds);
-    this.concatMessageIdsOriginating(new_sender_update.messageIdsOriginating);
-    this.addToTotalSizeEstimate(new_sender_update.totalSizeEstimate);
+    this.concatThreadIds(newSenderUpdate.threadIds);
+    this.concatThreadIdsOriginating(newSenderUpdate.threadIdsOriginating);
+    this.concatMessageIds(newSenderUpdate.messageIds);
+    this.concatMessageIdsOriginating(newSenderUpdate.messageIdsOriginating);
+    this.addToTotalSizeEstimate(newSenderUpdate.totalSizeEstimate);
   }
-
 }
 
 module.exports = SenderUpdate;

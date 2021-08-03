@@ -1,16 +1,16 @@
-/*******************************************************************************
+/**
  * MONGODB INIT
- ******************************************************************************/
+ ****************************************************************************/
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
 const sessionSchema = new Schema({
-  sessionID: { type: String, required: false },
-  accessToken: { type: String, required: true },
-  expiry_date: { type: String, required: true },
-  token_type: { type: String, required: true },
-  scope: { type: String, required: true },
-  refresh_token: { type: String, required: false },
+  sessionID: {type: String, required: false},
+  accessToken: {type: String, required: true},
+  expiry_date: {type: String, required: true},
+  token_type: {type: String, required: true},
+  scope: {type: String, required: true},
+  refresh_token: {type: String, required: false},
 });
 
 const historySchema = new Schema({
@@ -18,12 +18,12 @@ const historySchema = new Schema({
   active: {
     loadingStatus: Boolean,
     percentLoaded: Number,
-    session: sessionSchema
+    session: sessionSchema,
   },
   passive: {
     firstRun: Boolean,
     firstRunDate: Date,
-    lastRunDate: Date
+    lastRunDate: Date,
   },
 });
 

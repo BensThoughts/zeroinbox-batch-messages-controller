@@ -3,24 +3,31 @@ const SenderUpdate = require('./SenderUpdate.class');
 const logger = require('../../../loggers/log4js');
 const crypto = require('crypto');
 
+/**
+ * @param  {GmailResponseMessage} message
+ * @return {Object}
+ */
 function extractMetaData(message) {
   let messageMetaData;
-  
-  let headers = extractHeaders(message.payload.headers);
-  
+
+  const headers = extractHeaders(message.payload.headers);
+
   if (headers !== undefined) {
     messageMetaData = {
       fromAddress: headers.fromAddress,
       fromName: headers.fromName,
       unsubscribeWeb: headers.unsubscribeWeb,
       unsubscribeEmail: headers.unsubscribeEmail,
-    }
+    };
   }
 
-  return messageMetaData; 
+  return messageMetaData;
 }
 
-
+/**
+ * @param  {HttpHeaders} headers
+ * @return {ExtractedHeaders}
+ */
 function extractHeaders(headers) {
   let fromAddress;
   let fromName;
@@ -31,7 +38,7 @@ function extractHeaders(headers) {
 
   let headerName = '';
   let headerValue = '';
-  for (let header of headers) {
+  for (const header of headers) {
     headerName = header.name.toUpperCase();
     headerValue = header.value;
     if (headerName === 'FROM') {
@@ -41,8 +48,8 @@ function extractHeaders(headers) {
         fromAddress: fromAddress,
         fromName: fromName,
         unsubscribeEmail: unsubscribeEmail,
-        unsubscribeWeb: unsubscribeWeb
-      }
+        unsubscribeWeb: unsubscribeWeb,
+      };
     }
     if (headerName === 'LIST-UNSUBSCRIBE') {
       if (headerValue.search(',') !== -1) {
@@ -61,8 +68,8 @@ function extractHeaders(headers) {
         fromAddress: fromAddress,
         fromName: fromName,
         unsubscribeEmail: unsubscribeEmail,
-        unsubscribeWeb: unsubscribeWeb
-      }
+        unsubscribeWeb: unsubscribeWeb,
+      };
     }
   }
   if (extractedHeaders === undefined) {
@@ -73,6 +80,10 @@ function extractHeaders(headers) {
   }
 }
 
+/**
+ * @param  {string} unsubscribeEmail
+ * @return {string}
+ */
 function extractUnsubscribeEmail(unsubscribeEmail) {
   unsubscribeEmail = unsubscribeEmail.replace('<mailto:', '');
   unsubscribeEmail = unsubscribeEmail.replace('>', '');
@@ -80,6 +91,10 @@ function extractUnsubscribeEmail(unsubscribeEmail) {
   return unsubscribeEmail;
 }
 
+/**
+ * @param  {string} unsubscribeWeb
+ * @return {string}
+ */
 function extractUnsubscribeWeb(unsubscribeWeb) {
   unsubscribeWeb = unsubscribeWeb.replace('<', '');
   unsubscribeWeb = unsubscribeWeb.replace('>', '');
@@ -87,68 +102,85 @@ function extractUnsubscribeWeb(unsubscribeWeb) {
   return unsubscribeWeb;
 }
 
+/**
+ * @param  {string} listUnsubscribe
+ * @return {string}
+ */
 function unsubscribeType(listUnsubscribe) {
   if (listUnsubscribe.includes('<mailto:')) {
-    return true
+    return true;
   }
   return false;
 }
 
+/**
+ * @param  {string} from
+ * @return {string}
+ */
 function extractName(from) {
   from = from.replace(/"/g, '');
   let fromName;
-  let endIndex = from.search(/<+/);
-  let searchIndex = from.lastIndexOf('@');
+  const endIndex = from.search(/<+/);
+  const searchIndex = from.lastIndexOf('@');
   if (searchIndex === -1) {
     throw new Error('Error in From/from field, no "@" found');
   }
   if ((endIndex !== -1) && (endIndex !== 0)) {
     fromName = from.slice(0, endIndex).trim();
   } else if (endIndex === 0) {
-    fromName = from.slice(1, searchIndex); // endIndex === 0 means from is likely of form <name@address.com>
+    // endIndex === 0 means from is likely of form <name@address.com>
+    fromName = from.slice(1, searchIndex);
   } else {
     fromName = from.slice(0, searchIndex);
   }
 
   if (fromName === undefined) {
-    throw new Error('fromName undefined!')
+    throw new Error('fromName undefined!');
   }
   return fromName;
 }
 
 /**
- * 
- * @param {string} from 
+ * @param {string} from
+ * @return {string}
  */
 function extractAddress(from) {
   let fromAddress;
   from = from.replace(/"/g, '');
-  let startIndex = from.search(/<+/)
-  let endIndex = from.search(/>+/);
+  const startIndex = from.search(/<+/);
+  const endIndex = from.search(/>+/);
   if ((startIndex !== -1) && (endIndex !== -1)) {
     fromAddress = from.slice(startIndex+1, endIndex);
   } else {
-    let searchIndex = from.search('@');
+    const searchIndex = from.search('@');
     if (searchIndex === -1) {
       throw new Error('Error in From/from field, no "@" found');
     }
     fromAddress = from;
   }
   if (fromAddress === undefined) {
-    throw new Error('fromAddress undefined!')
+    throw new Error('fromAddress undefined!');
   }
   return fromAddress;
 }
 
+/**
+ * @param  {string} senderAddress
+ * @return {string} id is an md5sum of email (senderAddress)
+ */
 function createSenderId(senderAddress) {
-  let md5sum = crypto.createHash('md5');
+  const md5sum = crypto.createHash('md5');
   md5sum.update(senderAddress);
-  
-  let id = md5sum.digest('hex');
+
+  const id = md5sum.digest('hex');
   // this.senderId = id;
   return id;
 }
-
+/**
+ * @param  {string} userId
+ * @param  {GmailMessage} message
+ * @return {boolean}
+ */
 function checkMessage(userId, message) {
   try {
     if (message.threadId === undefined) {
@@ -170,108 +202,123 @@ function checkMessage(userId, message) {
       throw new Error('message.payload.headers undefined!');
     }
     return true;
-  } catch(err) {
+  } catch (err) {
     logger.error(userId + ' - Error in message: ' + message.id + ': ' + err);
     return false;
   }
 }
+
+/** Class representing gmail batch results of getting meta-data */
 class BatchResults {
-
-    constructor(userId) {
-      this.senderUpdates = []; // an array of SenderUpdates (the results)
-      this.messageUpdates = [];
-      this.empty = true;
-      this.userId = userId;
-    }
-  
-    addToResults(message) {
-      let ok = checkMessage(this.userId, message);
-      if (ok) {
-        let new_sender_update;
-        let originatingSender = false;
-        if ( message.threadId === message.id) {
-          // originating thread message
-          originatingSender = true;
-        }
-
-        new_sender_update = this.createSenderUpdate(message, originatingSender);
-        if (new_sender_update != undefined) {
-          this.addToSenderUpdates(new_sender_update);
-        }
-
-      }
-    }
-
-    createMessageUpdate(message) {
-
-    }
-
-    createSenderUpdate(message, originatingSender) {
-      // let senderMessage = messages[0]
-      try {
-        let senderUpdate;
-        let senderMetaData = extractMetaData(message);
-        let senderId = createSenderId(senderMetaData.fromAddress);
-
-        if (originatingSender) {
-          senderUpdate = {
-            senderId: senderId,
-            senderNames: [senderMetaData.fromName],
-            senderAddress: senderMetaData.fromAddress,
-            unsubscribeEmail: senderMetaData.unsubscribeEmail,
-            unsubscribeWeb: senderMetaData.unsubscribeWeb,
-            threadIds: [message.threadId],
-            threadIdsOriginating: [message.threadId],
-            messageIds: [message.id],
-            messageIdsOriginating: [], // implement later, with call to threadId perhaps
-            totalSizeEstimate: message.sizeEstimate,
-          }
-         } else {
-          senderUpdate = {
-            senderId: senderId,
-            senderNames: [senderMetaData.fromName],
-            senderAddress: senderMetaData.fromAddress,
-            unsubscribeEmail: senderMetaData.unsubscribeEmail,
-            unsubscribeWeb: senderMetaData.unsubscribeWeb,
-            threadIds: [message.threadId],
-            threadIdsOriginating: [],
-            messageIds: [message.id],
-            messageIdsOriginating: [],
-            totalSizeEstimate: message.sizeEstimate
-          }
-        }
-        let new_sender_update = new SenderUpdate(senderUpdate, this.userId);
-        return new_sender_update;
-      } catch(err) {
-        logger.error(err);
-        return undefined;
-      }
-    }
-
-    addToSenderUpdates(new_sender_update) {
-      let found = false;
-      if (this.empty) {
-        this.senderUpdates.push(new_sender_update);
-        this.empty = false;
-      } else {
-        for (let i = 0; i < this.senderUpdates.length; i++) {
-          let previous_suggestion = this.senderUpdates[i];
-          if (previous_suggestion.senderId === new_sender_update.senderId) {
-            previous_suggestion.mergeSenderUpdate(new_sender_update);
-            found = true;
-            break;
-          }
-        }
-        if (!found) {
-          this.senderUpdates.push(new_sender_update);
-        }
-      }
-    }
-  
-    getResults() {
-      return this.senderUpdates;
-    }
-  
+  /**
+   * @param  {string} userId
+   */
+  constructor(userId) {
+    // an array of Sender email address Updates (the results)
+    this.senderUpdates = [];
+    // an array of email messages currently in Inbox
+    this.messageUpdates = [];
+    this.empty = true;
+    this.userId = userId;
   }
 
-  module.exports = BatchResults;
+  /**
+   * @param  {GmailEmailMessage} message
+   */
+  addToResults(message) {
+    const ok = checkMessage(this.userId, message);
+    if (ok) {
+      let originatingSender = false;
+      if ( message.threadId === message.id) {
+        // sender started the thread (first message in thread)
+        originatingSender = true;
+      }
+
+      const newSenderUpdate =
+        this._createSenderUpdate(message, originatingSender);
+      if (newSenderUpdate != undefined) {
+        this._addToSenderUpdates(newSenderUpdate);
+      }
+    }
+  }
+
+  /**
+   * @param  {GmailEmailMessage} message
+   * @param  {string} originatingSender
+   * @return {SenderUpdate}
+   */
+  _createSenderUpdate(message, originatingSender) {
+    // let senderMessage = messages[0]
+    try {
+      let senderUpdate;
+      const senderMetaData = extractMetaData(message);
+      const senderId = createSenderId(senderMetaData.fromAddress);
+
+      if (originatingSender) {
+        senderUpdate = {
+          senderId: senderId,
+          senderNames: [senderMetaData.fromName],
+          senderAddress: senderMetaData.fromAddress,
+          unsubscribeEmail: senderMetaData.unsubscribeEmail,
+          unsubscribeWeb: senderMetaData.unsubscribeWeb,
+          threadIds: [message.threadId],
+          threadIdsOriginating: [message.threadId],
+          messageIds: [message.id],
+
+          // implement later, with call to threadId perhaps
+          messageIdsOriginating: [],
+          totalSizeEstimate: message.sizeEstimate,
+        };
+      } else {
+        senderUpdate = {
+          senderId: senderId,
+          senderNames: [senderMetaData.fromName],
+          senderAddress: senderMetaData.fromAddress,
+          unsubscribeEmail: senderMetaData.unsubscribeEmail,
+          unsubscribeWeb: senderMetaData.unsubscribeWeb,
+          threadIds: [message.threadId],
+          threadIdsOriginating: [],
+          messageIds: [message.id],
+          messageIdsOriginating: [],
+          totalSizeEstimate: message.sizeEstimate,
+        };
+      }
+      const newSenderUpdate = new SenderUpdate(senderUpdate, this.userId);
+      return newSenderUpdate;
+    } catch (err) {
+      logger.error(err);
+      return undefined;
+    }
+  }
+
+  /**
+   * @param  {SenderUpdate} newSenderUpdate
+   */
+  _addToSenderUpdates(newSenderUpdate) {
+    let found = false;
+    if (this.empty) {
+      this.senderUpdates.push(newSenderUpdate);
+      this.empty = false;
+    } else {
+      for (let i = 0; i < this.senderUpdates.length; i++) {
+        const previousSuggestion = this.senderUpdates[i];
+        if (previousSuggestion.senderId === newSenderUpdate.senderId) {
+          previousSuggestion.mergeSenderUpdate(newSenderUpdate);
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        this.senderUpdates.push(newSenderUpdate);
+      }
+    }
+  }
+  /**
+   * @return {Array<SenderUpdate>}
+   */
+  getResults() {
+    return this.senderUpdates;
+  }
+}
+
+module.exports = BatchResults;

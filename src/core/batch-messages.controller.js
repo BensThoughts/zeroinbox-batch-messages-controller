@@ -36,7 +36,7 @@ const {
  * Checks if the response is valid (some emails have invalid properties)
  * @param  {string} userId
  * @param  {Object} partBatchResponse {
- *  body: The message payload
+ *  body: The 'message' part of the payload
  *  id: The message id payload
  * }
  * @return {boolean}
@@ -111,6 +111,7 @@ async function batchGetMessages(messageIdsMsg, userMsg) {
           batchResult.parts.forEach((partBatchResponse) => {
             const ok = checkPartBatchResponse(userId, partBatchResponse);
             if (ok) {
+              // message is a GmailEmailMessage
               const message = partBatchResponse.body;
               batchResults.addToResults(message);
             }
