@@ -134,7 +134,7 @@ const shutdown = (server, signal, value) => {
   rabbit.disconnect(() => {
     logger.info('Rabbit disconnected!');
     mongoose.disconnect((error) => {
-      if (err) logger.error('Error in mongoose.disconnect(): ' + error);
+      if (error) logger.error('Error in mongoose.disconnect(): ' + error);
       logger.info('Mongo disconnected!');
     });
     server.close(() => {
