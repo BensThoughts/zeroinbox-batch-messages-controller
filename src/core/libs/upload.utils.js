@@ -11,9 +11,9 @@ const {
 function uploadBatchResults(userId, senders) {
   upsertSenders(userId, senders, (err, raw) => {
     if (err) {
-      return logger.error(userId + ' - Error in upsertSenders(): ' + err);
+      return logger.error('Error in upsertSenders(): ' + err);
     }
-    logger.trace(userId + ' - Senders updated in mongo async!');
+    logger.trace('Senders updated in mongo async!');
   });
 }
 
@@ -24,9 +24,9 @@ function uploadBatchResults(userId, senders) {
  */
 async function uploadBatchResultsSync(userId, senders) {
   await upsertSendersPromise(userId, senders).catch((err) => {
-    logger.error(userId + ' - Error in upsertSenders(): ' + err);
+    logger.error('Error in upsertSenders(): ' + err);
   });
-  logger.trace(userId + ' - Senders updated in mongo synchronously!');
+  logger.trace('Senders updated in mongo synchronously!');
 }
 
 /**

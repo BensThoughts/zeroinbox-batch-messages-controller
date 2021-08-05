@@ -20,9 +20,9 @@ function updateFirstRunStatus(userId, status) {
   };
   upsertToHistory(userId, update, (err, raw) => {
     if (err) {
-      return logger.error(userId + ' - Error in upsertToHistory: ' + err);
+      return logger.error('Error in upsertToHistory: ' + err);
     }
-    logger.trace(userId + ' - History: Passive: firstRun: false');
+    logger.trace('History: Passive: firstRun: false');
   });
 }
 
@@ -36,9 +36,9 @@ function updateLoadingStatus(userId, status) {
   };
   upsertLoadingStatus(userId, update, (err, raw) => {
     if (err) {
-      return logger.error(userId + ' - Error in upsertLoadingStatus: ' + err);
+      return logger.error('Error in upsertLoadingStatus: ' + err);
     }
-    logger.trace(userId + ' - LoadingStatus: loadingStatus set to false');
+    logger.trace('LoadingStatus: loadingStatus set to false');
   });
 }
 
@@ -71,11 +71,9 @@ function updatePercentLoaded(messageIdsMsg, batchPage) {
 
     upsertLoadingStatus(userId, update, (err, raw) => {
       if (err) {
-        return logger.error(userId + ' - Error in updateLoadingStatus: ' + err);
+        return logger.error('Error in updateLoadingStatus: ' + err);
       }
-      logger.trace(
-          userId + ' - History.active.percentLoaded: ' + percentTotalLoaded,
-      );
+      logger.trace('History.active.percentLoaded: ' + percentTotalLoaded);
     });
   });
 }

@@ -203,7 +203,7 @@ function checkMessage(userId, message) {
     }
     return true;
   } catch (err) {
-    logger.error(userId + ' - Error in message: ' + message.id + ': ' + err);
+    logger.error('Error in message: ' + message.id + ': ' + err);
     return false;
   }
 }

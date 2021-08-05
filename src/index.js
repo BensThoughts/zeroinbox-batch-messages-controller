@@ -54,10 +54,8 @@ mongoose.connect(
               userTopology.channels.listen,
               userTopology.queues.user_id,
               (userMsg) => {
-                const message = JSON.stringify(userMsg.content);
                 const userId = userMsg.content.userId;
-                logger.trace(userId + ' - userMsg.content: ' + message);
-
+                logger.addContext('userId', userId + ' - ');
                 // QUESTION: new? or created new class for this?
                 setupConsumer(userMsg);
               }, {noAck: false});
@@ -95,9 +93,9 @@ function setupConsumer(userMsg) {
             (bindQueueErr, ok) => {
               if (bindQueueErr) return logger.error(bindQueueErr);
               rabbit.consume(userChannel, messageIdsQueue, (messageIdsMsg) => {
-                logger.trace(userId + ' - messageIdsMsg received');
+                logger.trace('messageIdsMsg received');
                 const msgIdsLength = messageIdsMsg.content.messageIds.length;
-                logger.trace(userId + ' - messageIds.length: ' + msgIdsLength);
+                logger.trace('messageIds.length: ' + msgIdsLength);
                 batchGetMessages(messageIdsMsg, userMsg);
               }, {noAck: false});
             },
