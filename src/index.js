@@ -129,16 +129,27 @@ function processHandler(server) {
 }
 
 const shutdown = (server, signal, value) => {
-  logger.info('shutdown!');
-  logger.info(`Server stopped by ${signal} with value ${value}`);
-  rabbit.disconnect(() => {
+  logger.info(`Batch Message service stopped by ${signal} with value ${value}`);
+  rabbit.disconnect((rabbitErr) => {
+    if (rabbitErr) {
+      logger.error('RabbitMQ disconnect error: ' + rabbitErr);
+      process.exitCode = 1;
+    }
     logger.info('Rabbit disconnected!');
-    mongoose.disconnect((error) => {
-      if (error) logger.error('Error in mongoose.disconnect(): ' + error);
-      logger.info('Mongo disconnected!');
-    });
-    server.close(() => {
-      logger.info('Express health check server closed!');
+    mongoose.disconnect((mongooseError) => {
+      if (mongooseError) {
+        logger.error('Mongo disconnect error: ' + mongooseError);
+        process.exitCode = 1;
+      }
+      logger.info('MongoDB disconnected!');
+      server.close((serverErr) => {
+        if (serverErr) {
+          logger.error('ExpressJS Health Check Server Error: ' + serverErr);
+          process.exitCode = 1;
+        }
+        logger.info('ExpressJS Health Check Server Closed!');
+        process.exitCode = 0;
+      });
     });
   });
 };
