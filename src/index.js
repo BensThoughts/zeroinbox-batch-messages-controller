@@ -43,10 +43,10 @@ mongoose.connect(
           logger.info('Connected to RabbitMQ!');
           const server =
             kubeHealthCheck
-              .listen(BATCH_MESSAGES_HEALTH_PORT, () => {
-                logger.info('Express server started for health checks');
+                .listen(BATCH_MESSAGES_HEALTH_PORT, () => {
+                  logger.info('Express server started for health checks');
                 // logger.info(`Running health check on http://${MESSAGE_IDS_HEALTH_HOST}:${MESSAGE_IDS_HEALTH_PORT}`);
-              });
+                });
           const address = server.address();
           logger.info(address);
           processHandler(server);
@@ -59,7 +59,9 @@ mongoose.connect(
                 const userId = userMsg.content.userId;
                 logger.addContext('userId', userId + ' - ');
                 // QUESTION: new? or created new class for this?
-                logger.info(`incoming message ${JSON.stringify(userMsg.content)}`)
+                logger.info(
+                    `incoming message ${JSON.stringify(userMsg.content)}`,
+                );
                 setupConsumer(userMsg);
               }, {noAck: false});
         });
