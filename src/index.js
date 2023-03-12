@@ -11,7 +11,7 @@ const batchGetMessages = require('./core/batch-messages.controller');
 
 const {
   MONGO_URI,
-  BATCH_MESSAGES_HEALTH_HOST,
+  // BATCH_MESSAGES_HEALTH_HOST,
   BATCH_MESSAGES_HEALTH_PORT,
 } = require('./config/init.config');
 
@@ -22,8 +22,8 @@ Object.keys(envVars).forEach((envVar) => {
 });
 
 const express = require('express');
-const KubeHealthCheck = express();
-KubeHealthCheck.get('/healthz', (req, res, next) => {
+const kubeHealthCheck = express();
+kubeHealthCheck.get('/healthcheck', (req, res, next) => {
   res.status(200).send();
 });
 
@@ -41,13 +41,15 @@ mongoose.connect(
             throw new Error('Error in rabbit.connect(): ' + err);
           }
           logger.info('Connected to RabbitMQ!');
-
-          const server = KubeHealthCheck
-              .listen(BATCH_MESSAGES_HEALTH_PORT, BATCH_MESSAGES_HEALTH_HOST);
+          const server =
+            kubeHealthCheck
+              .listen(BATCH_MESSAGES_HEALTH_PORT, () => {
+                logger.info('Express server started for health checks');
+                // logger.info(`Running health check on http://${MESSAGE_IDS_HEALTH_HOST}:${MESSAGE_IDS_HEALTH_PORT}`);
+              });
+          const address = server.address();
+          logger.info(address);
           processHandler(server);
-          logger.info(
-              `Running health check on http://${BATCH_MESSAGES_HEALTH_HOST}:${BATCH_MESSAGES_HEALTH_PORT}`,
-          );
 
           rabbit.setChannelPrefetch(userTopology.channels.listen, 1);
           rabbit.consume(
@@ -57,6 +59,7 @@ mongoose.connect(
                 const userId = userMsg.content.userId;
                 logger.addContext('userId', userId + ' - ');
                 // QUESTION: new? or created new class for this?
+                logger.info(`incoming message ${JSON.stringify(userMsg.content)}`)
                 setupConsumer(userMsg);
               }, {noAck: false});
         });
